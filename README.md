@@ -495,3 +495,27 @@ If an API key is accidentally exposed, revoke it and generate a new key.
 This project demonstrates a modular multi-agent document intelligence workflow combining document retrieval, evidence analysis, and grounded answer generation.
 
 The system integrates the three project parts into a functional FastAPI application with a browser interface, contextual follow-up questions, source citations, and automated tests.
+
+
+
+## Team Members
+
+| Team Member | Project Part | Responsibilities |
+|---|---|---|
+| Esraa | Part A — Retriever | Document loading, preprocessing, chunking, embeddings, vector storage, semantic and keyword retrieval |
+| Mariam | Part B — Analyst | Evidence analysis, calculations, table extraction, document comparison, and retrieval feedback loop |
+| Alaa Boghdady | Part C — Answer Agent & Integration | Answer generation, source citations, orchestrator, chat memory, caching, FastAPI, and user interface |
+
+### Project Overview
+
+This project was developed collaboratively by three team members, each responsible for a core component of the Multi-Agent Document Intelligence System.
+
+**Part A — Esraa:** Retriever Agent
+
+**Part B — Mariam:** Analyst Agent
+
+**Part C — Alaa Boghdady:** Answer Agent, Orchestrator & API
+
+### System Workflow
+
+Document Upload → Retriever → Analyst → Answer Agent → Final Answer with Citations
