@@ -1,0 +1,370 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Document Chat</title>
+
+  <style>
+    body {
+      font: 16px system-ui;
+      background: #0b1220;
+      color: #e9efff;
+      margin: 0;
+    }
+
+    main {
+      max-width: 820px;
+      margin: 35px auto;
+      padding: 25px;
+    }
+
+    section {
+      background: #172338;
+      border: 1px solid #30445f;
+      border-radius: 16px;
+      padding: 22px;
+      margin: 18px 0;
+    }
+
+    button {
+      background: #3986ff;
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 18px;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2774eb;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    input, textarea {
+      box-sizing: border-box;
+      padding: 12px;
+      background: #0b1220;
+      color: white;
+      border: 1px solid #526782;
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    small {
+      color: #b9c8e2;
+    }
+
+    .source {
+      padding: 10px;
+      background: #253650;
+      border-radius: 6px;
+      margin: 6px 0;
+      overflow-wrap: anywhere;
+    }
+
+    #answer {
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+    }
+
+    #answer:empty {
+      display: none;
+    }
+
+    #answer h1,
+    #answer h2,
+    #answer h3 {
+      margin-top: 20px;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+
+    #answer p {
+      margin: 12px 0;
+    }
+
+    #answer ul,
+    #answer ol {
+      padding-left: 25px;
+    }
+
+    #answer li {
+      margin: 6px 0;
+    }
+
+    #answer strong {
+      color: #ffffff;
+    }
+
+    #answer table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      display: block;
+      overflow-x: auto;
+    }
+
+    #answer th,
+    #answer td {
+      border: 1px solid #526782;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    #answer th {
+      background: #253650;
+    }
+
+    #answer pre {
+      background: #0b1220;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    #answer code {
+      background: #253650;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    #answer pre code {
+      background: transparent;
+      padding: 0;
+    }
+
+    #answer blockquote {
+      border-left: 3px solid #3986ff;
+      padding-left: 15px;
+      margin-left: 0;
+      color: #c5d6f3;
+    }
+
+    #answer a {
+      color: #76b3ff;
+    }
+
+    #answer hr {
+      border: 0;
+      border-top: 1px solid #526782;
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+</head>
+
+<body>
+  <main>
+    <h1>📄 Document Chat</h1>
+    <p>
+      Upload PDF, DOCX or TXT files and ask questions
+      with page citations.
+    </p>
+
+    <section>
+      <h2>1. Upload</h2>
+
+      <input
+        id="file"
+        type="file"
+        accept=".pdf,.docx,.txt"
+      >
+
+      <p>
+        <button id="uploadButton" onclick="upload()">
+          Upload and index
+        </button>
+      </p>
+
+      <small id="uploadStatus"></small>
+    </section>
+
+    <section>
+      <h2>2. Ask</h2>
+
+      <textarea
+        id="question"
+        placeholder="What does the document say about ...?"
+      ></textarea>
+
+      <p>
+        <button id="askButton" onclick="ask()">
+          Ask documents
+        </button>
+
+        <button onclick="reset()">
+          New chat
+        </button>
+      </p>
+
+      <small id="askStatus"></small>
+
+      <h3>Answer</h3>
+      <div id="answer"></div>
+
+      <h3>Sources</h3>
+      <div id="sources"></div>
+    </section>
+  </main>
+
+  <script>
+    let session = crypto.randomUUID();
+
+    function renderAnswer(answer) {
+      const element = document.getElementById("answer");
+      const content = String(answer || "");
+
+      if (
+        typeof marked !== "undefined" &&
+        typeof DOMPurify !== "undefined"
+      ) {
+        element.innerHTML = DOMPurify.sanitize(
+          marked.parse(content)
+        );
+      } else {
+        element.textContent = content;
+        console.warn(
+          "Markdown libraries unavailable. Showing plain text."
+        );
+      }
+    }
+
+    async function upload() {
+      const file = document.getElementById("file").files[0];
+
+      if (!file) {
+        alert("Choose a file");
+        return;
+      }
+
+      const button = document.getElementById("uploadButton");
+      const status = document.getElementById("uploadStatus");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      button.disabled = true;
+      status.textContent = "Indexing...";
+
+      try {
+        const response = await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        status.textContent = response.ok
+          ? `Indexed ${data.filename}: ${data.chunks} chunks`
+          : (data.detail || "Upload failed");
+
+      } catch (error) {
+        status.textContent = String(error);
+
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function ask() {
+      const question = document
+        .getElementById("question")
+        .value
+        .trim();
+
+      if (!question) {
+        return;
+      }
+
+      const button = document.getElementById("askButton");
+      const status = document.getElementById("askStatus");
+      const sources = document.getElementById("sources");
+
+      button.disabled = true;
+      status.textContent = "Working...";
+
+      try {
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            question: question,
+            session_id: session
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || "Request failed");
+        }
+
+        renderAnswer(data.answer);
+
+        sources.replaceChildren();
+
+        for (const item of (data.sources || [])) {
+          const source = document.createElement("div");
+
+          source.className = "source";
+          source.textContent = item.citation || "";
+
+          sources.appendChild(source);
+        }
+
+        status.textContent = data.enough_evidence
+          ? "Evidence checked"
+          : "Limited evidence available";
+
+      } catch (error) {
+        status.textContent = String(error);
+
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function reset() {
+      const oldSession = session;
+
+      try {
+        const response = await fetch(
+          "/sessions/" + encodeURIComponent(oldSession),
+          { method: "DELETE" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not reset session");
+        }
+
+        session = crypto.randomUUID();
+
+        document.getElementById("answer").replaceChildren();
+        document.getElementById("sources").replaceChildren();
+        document.getElementById("question").value = "";
+        document.getElementById("askStatus").textContent =
+          "New session started";
+
+      } catch (error) {
+        document.getElementById("askStatus").textContent =
+          String(error);
+      }
+    }
+  </script>
+</body>
+</html>

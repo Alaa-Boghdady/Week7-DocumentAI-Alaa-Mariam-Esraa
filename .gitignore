@@ -1,0 +1,32 @@
+
+# Environment and secrets
+.env
+.env.*
+app.env
+!app.env.example
+
+# Virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local databases
+chroma_db/
+*.sqlite3
+
+# Uploaded documents
+uploads/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
